@@ -6,8 +6,6 @@
 - [[#why-emacs][Why Emacs]]
 - [[#about-this-configuration][About this configuration]]
 - [[#install][Install]]
-  - [[#makefile][Makefile]]
-  - [[#fetch-submodule-manually][Fetch submodule manually]]
 
 * Why Emacs
 
@@ -68,7 +66,8 @@ This *Why Emacs* section credits to [[https://github.com/remacs/remacs][Remacs]]
 
 * About this configuration
 
-This configuration is about simple Emacs.
+This configuration is about Evil + Emacs, using =package.el= to manage
+packages.
 
 * Install
 
@@ -81,22 +80,4 @@ path.
 
 #+begin_src sh
   git clone https://github.com/dalugm/emacs.simple.git ~/.emacs.d
-#+end_src
-
-** Makefile
-
-#+begin_src sh
-  cd ~/.emacs.d
-  make bootstrap-borg
-  make help                       # check help
-  make bootstrap
-#+end_src
-
-** Fetch submodule manually
-
-#+begin_src sh
-  cd ~/.emacs.d
-  git submodule update --init --recursive
-  git submodule foreach git reset --hard
-  git submodule foreach git checkout master
 #+end_src
