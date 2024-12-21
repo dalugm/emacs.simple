@@ -191,16 +191,15 @@ dart-mode dart-ts-mode
        "return const Placeholder(" n>
        "child: Center(child: Text('" r "'))," n>
        ");" n "}" >)
-(cp "const " p "._();")
 (dcd "@override" n>
      "void didChangeDependencies () {" n>
      "super.didChangeDependencies();" n> r> n
      "}" >)
 (dp "@override" n> "void dispose() {" n> r> n> "super.dispose();" n "}" >)
-(fzj "factory " (p "name" name) ".fromJson(Map<String, dynamic> json) => _$" name "FromJson(json);")
+(ffj "factory " (p "name" name) ".fromJson(Map<String, dynamic> json) => _$" name "FromJson(json);")
+(fp "debugPrint(" r ")")
 (is "@override" n> "void initState() {" n> "super.initState();" n> r> n "}" >)
 (p "print(" r ")")
-(pv "print('" (r "var" var) ": ${" var "}')")
 (ss "setState(() {" n> r> n "});" >)
 (try "try {" n> r> n
      "} catch (e, s) { " > n>
@@ -213,7 +212,7 @@ dart-mode dart-ts-mode
 (um "final " (p "memoized") " = useMemoized(() => " (p "result") ", [" r "]);")
 (ur "const [" (p "state") ", " (p "dispatch") "] = useReducer(" (p "reducer") ", " (p "args") ");")
 (urf "final " (p "ref") " = useRef(" r ");")
-(us "final " (p "name") " = useState<" (p "dynamic") ">(" r ");")
+(us "final " (p "name") " = useState(" r ");")
 (uvc "useValueChanged(" (p "value") ", (_, __) {" n> r> n> "});" >)
 
 dart-mode dart-ts-mode :when (re-search-backward "^\\S-*$" (line-beginning-position) 'noerror)
@@ -266,6 +265,7 @@ dart-mode dart-ts-mode :when (re-search-backward "^\\S-*$" (line-beginning-posit
      "factory " name ".fromJson(Map<string, dynamic> json) => _$" name "FromJson(json);" n n>
      "Map<String, dynamic> toJson() => _$" name "ToJson(this);" n
      "}")
+(main "void main() {" n q n "}")
 (pf "part '" (file-name-sans-extension (buffer-name)) ".freezed.dart';")
 (pg "part '" (file-name-sans-extension (buffer-name)) ".g.dart';")
 (po "part of '" p "';")
@@ -577,6 +577,16 @@ js-mode js-ts-mode tsx-ts-mode typescript-mode typescript-ts-mode web-mode
 (sto "setTimeout(() => {" n> p n "}, " (p "timeout") ");" >)
 (sm (p "collection") ".some((" (p "elem") ") => {" n> r> n "});" >)
 (try "try {" n> p n "} catch (err) {" > n> p n "} finally {" > n> r> n "}" >)
+
+json-mode json-ts-mode
+
+(snp "\"" (p "name" name) "\": {" n>
+     "\"prefix\": \"" (p "prefix") "\"," > n>
+     "\"body\": [" > n>
+     "\"" p "\"" > n>
+     "]," > n>
+     "\"description\": \"" name "\"" > n>
+     "}," >)
 
 latex-mode
 
