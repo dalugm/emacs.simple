@@ -109,12 +109,6 @@ See also: `package-archives'."
   :custom
   (package-install-upgrade-built-in t))
 
-(use-package package-vc
-  :ensure nil
-  :defer t
-  :custom
-  (package-vc-allow-build-commands '(reader)))
-
 ;; Update GPG keyring for GNU ELPA
 (use-package gnu-elpa-keyring-update)
 
@@ -381,7 +375,7 @@ With a prefix ARG, rename based on current name."
     "Copy file name to clipboard."
     (interactive)
     (let ((filename (if (equal major-mode 'dired-mode)
-                        default-directory
+                        (directory-file-name default-directory)
                       (buffer-file-name))))
       (if filename
           (progn
@@ -577,19 +571,18 @@ argument ARG, insert name only."
   (defun my-print-ascii-table (&optional arg)
     "Print the ASCII table.
 
-Default print to 256.  With a prefix ARG, print to specified
-number."
+Print character codes 0 through 255 by default.
+With a prefix ARG, prompt for the number of character codes to print."
     (interactive "P")
     (let ((num (if arg
                    (read-number "Input a number: ")
-                 256))
-          (i 0))
+                 256)))
       (switch-to-buffer "*ASCII*")
-      (erase-buffer)
-      (insert (format "ASCII characters up to number %d.\n" num))
-      (while (< i num)
-        (cl-incf i)
-        (insert (format "%4d %c\n" i i)))
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "Character codes from 0 to %d.\n" (1- num)))
+        (dotimes (i num)
+          (insert (format "%4d %c\n" i i))))
       (special-mode)
       (goto-char (point-min))))
 
@@ -1477,14 +1470,6 @@ More details are inside `my-load-font'."
   :custom (clojure-ts-auto-remap t)
   :after clojure-mode)
 
-(use-package cmake-ts-mode
-  :if (treesit-available-p)
-  :mode "\\(?:CMakeLists\\.txt\\|\\.cmake\\)\\'")
-
-(use-package dockerfile-ts-mode
-  :if (treesit-available-p)
-  :mode "\\(?:Dockerfile\\(?:\\..*\\)?\\|\\.[Dd]ockerfile\\)\\'")
-
 (use-package elisp-mode
   :ensure nil
   :preface
@@ -1525,10 +1510,6 @@ sexp before point and insert output into current position."
          (:map lisp-interaction-mode-map
                ("C-c C-p" . my-eval-print-last-sexp))))
 
-(use-package elixir-ts-mode
-  :if (treesit-available-p)
-  :mode "\\(?:\\.elixir\\|\\.exs?\\|mix\\.lock\\)\\'")
-
 (use-package fennel-mode
   :bind (:map fennel-mode-map
               ("C-c C-x C-j" . fennel-repl)))
@@ -1550,18 +1531,17 @@ sexp before point and insert output into current position."
 
 (use-package fsharp-ts-info
   :ensure nil
-  :after (eglot fsharp-ts-mode)
-  :config (fsharp-ts-info-mode +1))
+  :hook ((fsharp-ts-mode fsharp-ts-signature-mode) . fsharp-ts-info-mode))
 
 (use-package fsharp-ts-lens
   :ensure nil
-  :after (eglot fsharp-ts-mode)
-  :config (fsharp-ts-lens-mode +1))
-
-(use-package go-ts-mode
-  :if (treesit-available-p)
-  :mode (("\\.go\\'" . go-ts-mode)
-         ("/go\\.mod\\'" . go-mod-ts-mode)))
+  :commands fsharp-ts-lens-mode
+  :preface
+  (defun my--fsharp-ts-lens-setup ()
+    "Enable F# type lenses while Eglot manages the buffer."
+    (when (derived-mode-p 'fsharp-ts-mode 'fsharp-ts-signature-mode)
+      (fsharp-ts-lens-mode (if eglot-managed-mode 1 -1))))
+  :hook (eglot-managed-mode . my--fsharp-ts-lens-setup))
 
 (use-package haskell-ts-mode
   :if (treesit-available-p)
@@ -1575,14 +1555,6 @@ sexp before point and insert output into current position."
                  '(haskell-ts-mode . ("haskell-language-server-wrapper" "--lsp"))))
   :mode "\\.hs\\'")
 
-(use-package heex-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.[hl]?eex\\'")
-
-(use-package java-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.java\\'")
-
 (use-package js
   :custom (js-indent-level 2)
   :config
@@ -1590,12 +1562,9 @@ sexp before point and insert output into current position."
     (add-to-list 'eglot-server-programs
                  '(((js-mode :language-id "javascript")
                     (js-ts-mode :language-id "javascript"))
-                   . ("vtsls" "--stdio"))))
-  :mode ("\\.[cm]js\\'" . javascript-mode))
-
-(use-package json-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.json\\'")
+                   . ("tsc" "--lsp" "--stdio"))))
+  :mode (("\\.[cm]js\\'" . javascript-mode)
+         ("\\.jsonc\\'" . js-json-mode)))
 
 (use-package just-ts-mode
   :if (treesit-available-p)
@@ -1623,7 +1592,6 @@ sexp before point and insert output into current position."
   :config
   (with-eval-after-load 'eglot
     (add-to-list 'eglot-server-programs '(lua-ts-mode . ("emmylua_ls"))))
-  :mode "\\.lua\\'"
   :interpreter "\\<lua\\(?:jit\\)?")
 
 (use-package neocaml
@@ -1653,11 +1621,6 @@ sexp before point and insert output into current position."
   (my--treesit-ensure-grammar 'nix '("https://github.com/nix-community/tree-sitter-nix"))
   :defer t)
 
-(use-package php-ts-mode
-  :if (treesit-available-p)
-  :mode "\\(?:\\.\\(?:php[s345]?\\|phtml\\|inc\\|stub\\)\\|/\\.php_cs\\(?:\\.dist\\)?\\)\\'"
-  :interpreter "php\\(?:-?[34578]\\(?:\\.[0-9]+\\)*\\)?")
-
 (use-package protobuf-ts-mode
   :if (treesit-available-p)
   :config
@@ -1680,10 +1643,6 @@ sexp before point and insert output into current position."
               ("C-c C-x C-x" . racket-xp-mode)
               ("C-c C-x C-e" . racket-eval-last-sexp)))
 
-(use-package ruby-ts-mode
-  :if (treesit-available-p)
-  :mode "\\(?:\\.\\(?:rbw?\\|ru\\|rake\\|thor\\|axlsx\\|jbuilder\\|rabl\\|gemspec\\|podspec\\)\\|/\\(?:Gem\\|Rake\\|Cap\\|Thor\\|Puppet\\|Berks\\|Brew\\|Fast\\|Vagrant\\|Guard\\|Pod\\)file\\)\\'")
-
 (use-package tex-mode
   :defer t
   :config
@@ -1697,9 +1656,8 @@ sexp before point and insert output into current position."
     (add-to-list 'eglot-server-programs
                  '(((tsx-ts-mode :language-id "typescriptreact")
                     (typescript-ts-mode :language-id "typescript"))
-                   . ("vtsls" "--stdio"))))
-  :mode (("\\.[jt]sx\\'" . tsx-ts-mode)
-         ("\\.ts\\'" . typescript-ts-mode)))
+                   . ("tsc" "--lsp" "--stdio"))))
+  :mode ("\\.[cm]ts\\'" . typescript-ts-mode-maybe))
 
 (use-package vue-ts-mode
   :vc (:url "https://github.com/8uff3r/vue-ts-mode")
@@ -1928,20 +1886,6 @@ used by Sly's internal callers."
 
 (use-package flyspell
   :defer t)
-
-;;; Text
-
-(use-package html-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.html\\'")
-
-(use-package toml-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.toml\\'")
-
-(use-package yaml-ts-mode
-  :if (treesit-available-p)
-  :mode "\\.ya?ml\\'")
 
 ;;; Version control
 
@@ -2189,8 +2133,7 @@ KEEP is one of `upper', `base', `lower'."
                     :narrow ?w
                     :enabled (lambda () workspaces-mode)
                     :items (lambda ()
-                             (let ((consult-buffer-list-function
-                                    #'workspaces-buffer-list))
+                             (let ((consult-buffer-list-function #'workspaces-buffer-list))
                                (funcall (plist-get consult-source-buffer :items)))))
               consult-source-buffer)
       "Current workspace buffers, alongside Consult's global buffer source.")
@@ -2506,11 +2449,6 @@ URL `http://blog.binchen.org/posts/code-faster-by-extending-emacs-evil-text-obje
 
   (after-init . evil-mode)
 
-  :init
-
-  ;; This must be set before Evil creates its insert-state keymap.
-  (setq evil-disable-insert-state-bindings t)
-
   :custom
 
   (evil-want-C-i-jump nil)
@@ -2525,6 +2463,7 @@ URL `http://blog.binchen.org/posts/code-faster-by-extending-emacs-evil-text-obje
   (evil-undo-system 'undo-redo)
 
   :config
+  (setopt evil-disable-insert-state-bindings t)
 
   ;; Make evil-search behave more like VIM
   (evil-select-search-module 'evil-search-module 'evil-search)
@@ -2586,7 +2525,7 @@ URL `http://blog.binchen.org/posts/code-faster-by-extending-emacs-evil-text-obje
     (add-to-list 'evil-buffer-regexps b))
 
   (add-to-list 'evil-emacs-state-modes 'dired-mode)
-  (add-to-list 'evil-emacs-state-modes 'reader-mode)
+  (add-to-list 'evil-emacs-state-modes 'emureader-mode)
   (add-to-list 'evil-emacs-state-modes 'image-mode)
 
   (my--evil-adjust-major-mode-keymap "git-timemachine")
@@ -2920,7 +2859,10 @@ Add before the Capfs, such that it will be tried first."
                 (cons
                  tick
                  (org-element-map
-                     (org-element-parse-buffer) 'latex-environment
+                     (save-restriction
+                       (widen)
+                       (org-element-parse-buffer))
+                     'latex-environment
                    (lambda (environment)
                      (let ((begin (org-element-property :begin environment))
                            (value (org-element-property :value environment)))
@@ -3305,11 +3247,10 @@ Adapt from `org-babel-remove-result'."
   (markdown-gfm-uppercase-checkbox t)
   (markdown-italic-underscore t)
   (markdown-make-gfm-checkboxes-buttons t)
-
-  (markdown-gfm-additional-languages '("Mermaid"))
+  (markdown-gfm-additional-languages '("mermaid"))
   :hook (markdown-mode . (lambda ()
                            "The markdown files may contain tables, so do not wrap lines."
-                           (setq truncate-lines t))))
+                           (setq-local truncate-lines t))))
 
 (use-package typst-ts-mode
   :if (treesit-available-p)
@@ -3326,11 +3267,6 @@ Adapt from `org-babel-remove-result'."
   :if (treesit-available-p)
   :defer t)
 
-;;; Agent
-
-(use-package agent-shell
-  :defer t)
-
 ;;; Reader
 
 (use-package elfeed
@@ -3341,14 +3277,11 @@ Adapt from `org-babel-remove-result'."
   :after elfeed
   :config (elfeed-org))
 
-(use-package logview
+(use-package emureader
+  :if (display-graphic-p)
   :defer t)
 
-(use-package reader
-  :if (and (display-graphic-p)
-           (executable-find "make"))
-  :vc ( :url "https://codeberg.org/MonadicSheep/emacs-reader"
-        :make "all")
+(use-package logview
   :defer t)
 
 (use-package xiaoshuo-mode
